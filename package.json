@@ -1,0 +1,33 @@
+{
+  "name": "avatarai",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.html",
+  "scripts": {
+    "start": "parcel index.html --open",
+    "build": "parcel build index.html"
+  },
+  "author": "Lucas Matuszewski",
+  "license": "ISC",
+  "dependencies": {
+    "@babylonjs/core": "^7.20.1",
+    "@babylonjs/gui": "^7.20.1",
+    "@babylonjs/inspector": "^7.20.1",
+    "@babylonjs/ktx2decoder": "^7.20.1",
+    "@babylonjs/loaders": "^7.20.1",
+    "@babylonjs/materials": "^7.20.1",
+    "@babylonjs/post-processes": "^7.20.1",
+    "@babylonjs/procedural-textures": "^7.20.1",
+    "@babylonjs/serializers": "^7.20.1",
+    "@babylonjs/viewer": "^7.20.1",
+    "babylonjs": "^7.20.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "parcel-bundler": "^1.12.5",
+    "typescript": "^5.5.4"
+  },
+  "resolutions": {
+    "@babel/preset-env": "7.13.8"
+  }
+}
