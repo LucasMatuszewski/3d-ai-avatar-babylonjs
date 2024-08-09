@@ -57,6 +57,25 @@ const createScene = function () {
   // Move the sphere upward 1/2 of its height
   sphere.position.y = 1;
 
+  const box = MeshBuilder.CreateBox(
+    'box1',
+    {
+      size: 1,
+      depth: 2,
+      updatable: false,
+      faceColors: [
+        new Color4(0, 0, 1, 1), // Blue
+        new Color4(), // Black
+        new Color4(1, 0, 0, 1), // Red
+      ],
+      sideOrientation: Mesh.BACKSIDE, // only internal side of "face" visible, DOUBLESIDE = both sides of "face" visible
+    },
+    scene
+  );
+
+  // Move the box right, upward, and front (closer)
+  box.position = new Vector3(2, 1, -2);
+
   // Create a built-in "ground" shape; its constructor takes 6 params : name, width, height, subdivision, scene, updatable
   // const ground = BABYLON.Mesh.CreateGround('ground1', 6, 6, 2, scene, false); // DEPRECATED
   const ground = MeshBuilder.CreateGround(
