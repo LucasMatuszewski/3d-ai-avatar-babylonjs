@@ -30,11 +30,12 @@ import '@babylonjs/core/Helpers/sceneHelpers';
 
 // Parcel 2.0 require URL constructor for unsupported file types, instead of normal import
 const avatarFile = new URL(
+  // 'assets/Victoria9-red-dress-include-visible.glb',
   // '../../../../3D Models/Michael9/Michael9-packed-resources-Blender4-BSDF-shader-WebP.glb',
   // '../../../../3D Models/Michael9/Michael9-v3-JPG-all-face-textures-BSDF-shader.glb',
-  '../../../../3D Models/Michael9/Michael9-v3-WebP-all-face-textures-BSDF-shader.glb',
-  // '../../../../3D Models/Michael9/Michael9-v3-WebP+DRACO6-all-face-textures-BSDF-shader.glb',
-  // 'assets/Victoria9-red-dress-include-visible.glb',
+  // '../../../../3D Models/Michael9/Michael9-v3-WebP-all-face-textures-BSDF-shader.glb', // WebP
+  // '../../../../3D Models/Michael9/Michael9-v3-WebP+DRACO6-all-face-textures-BSDF-shader.glb', // WebP + DRACO
+  '../../../../3D Models/Michael9/Michael9-optimized-with-more-morphs-as-shape-keys-Draco.glb', // with Blend Shapes / shape keys (I had and error with WebP export)
   import.meta.url
 ).href;
 
@@ -50,12 +51,13 @@ const animationIdle = new URL(
  * TODO:
  * - optimize glb file - remove shoos, trousers, maybe remove legs or simplify mesh for legs?
  * - add more details for the face - normal maps, HD texture? (only for face!)
- *   - maybe I need to use Michael original skin for better quality textures? Maybe Michael HD?
- * - find better hair?
- * - add backed idle animation (sequence of animations) for body and face
+ *   - maybe I need to use Michael original skin for better quality textures? Maybe Michael HD? (no textures are the same, HD only has more dense mesh)
+ * - find better hair (smaller! these are 209 000 vertices...) and Eyebrows (40k vertices...)
+ * - add baked idle animation (sequence of animations) for body and face
+ * - add baked ARKit blendshapes as target morphs and use them in Babylon
  * - add better lights and white background similar to Unreal Engine scene?
+ * - add lip sync - connect with Nvidia ACE Audio2Face? Or maybe use simpler model to get visemes from text/audio?
  * - add animations to load from separate files but targeted to the same mesh (how to do this?)
- * - add lip sync - how?
  * - create a custom loading spinner on engine.displayLoadingUI() - how?
  */
 
@@ -191,6 +193,32 @@ const createScene = async (
   const hairCapMesh = avatarContainer.meshes[3];
   hairCapMesh.isVisible = false; // was visible when moving the camera
   avatarContainer.meshes[4].isVisible = false; // additional eyebrows (secondary) - without a difference in view = waste of performance
+
+  /**
+   *
+   * Morph Targets Manager
+   *
+   */
+
+  // Genesis9 meshes 6-10 for body:
+  // 6 -
+  // 7 -
+  // 8 - head
+  // 9 - hands
+  // 10 - legs
+
+  const avatarHeadMesh = avatarContainer.meshes[8];
+  console.log(
+    'avatarBodyMesh.morphTargetManager',
+    avatarHeadMesh.morphTargetManager
+  );
+
+  const avatarHeadAngry =
+    avatarHeadMesh.morphTargetManager?.getTargetByName('Smile Full Face');
+  console.log('avatarHeadAngry', avatarHeadAngry);
+  if (avatarHeadAngry) {
+    avatarHeadAngry.influence = 1;
+  }
 
   /**
    * ANIMATIONS
@@ -505,7 +533,7 @@ const createScene = async (
 
   // Target the camera to scene origin
   // camera.setTarget(Vector3.Zero());
-  camera.setTarget(avatarRoot);
+  // camera.setTarget(avatarRoot);
 
   // Attach the camera to the canvas
   // camera.attachControl(canvas, false); // two arguments not required anymore (backward compatibility)
