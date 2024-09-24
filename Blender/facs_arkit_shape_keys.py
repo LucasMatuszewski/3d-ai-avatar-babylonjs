@@ -1,3 +1,12 @@
+import sys
+import os
+
+# Add the directory containing your script to the Python path
+script_dir = os.path.dirname(os.path.abspath(__file__))
+if script_dir not in sys.path:
+    sys.path.append(script_dir)
+
+# Now you can import your local script
 from count_shapekeys_number import count_shapekeys_number
 
 count_shapekeys_number()
@@ -57,8 +66,20 @@ audio2faceFacsNames = [
     "tongueOut",
 ]
 
+audio2faceEmotionNames = [
+    "amazement",
+    "anger",
+    "cheekiness",
+    "disgust",
+    "fear",
+    "grief",
+    "joy",
+    "outofbreath",
+    "pain",
+    "sadness",
+]
+
 shape_keys_cleaned_with_expresions_visemes = [
-    "Basic",
     "head_bs_AsymmetryEyelidsCreaseHeightLeft",
     "head_bs_AsymmetryEyelidsCreaseHeightRight",
     "head_bs_AsymmetryEyelidsLowerRelaxLeft",
@@ -308,8 +329,8 @@ shape_keys_cleaned_with_expresions_visemes = [
     "Michael9_body_cbs_upperarm_z90p_l",
     "Afraid",
     "Angry",
-    "BareTeeth",
-    "Bereft",
+    "BareTeeth",  # szczerzyć zęby
+    "Bereft",  # osierocony
     "Bored",
     "Brow Down",
     "Brow Up",
@@ -332,7 +353,7 @@ shape_keys_cleaned_with_expresions_visemes = [
     "Concentrate",
     "Confident",
     "Confused",
-    "Contempt",
+    "Contempt",  # pogarda, lekceważenie
     "Desire",
     "Disgust",
     "Drunk",
@@ -342,14 +363,14 @@ shape_keys_cleaned_with_expresions_visemes = [
     "Eye Blink Right",
     "Eye Crossed",
     "Fear",
-    "Fierce",
+    "Fierce",  # zaciekły
     "Flirting",
-    "Frown",
-    "Glare",
+    "Frown",  # marszyć brwi
+    "Glare",  # piorunujący?
     "Happy",
     "Ignore",
     "Ill",
-    "Incredulous",
+    "Incredulous",  # nieufny
     "Irritated",
     "Jaw Forward-Recess",
     "Jaw Left-Right",
@@ -376,8 +397,8 @@ shape_keys_cleaned_with_expresions_visemes = [
     "Nose Sneer",
     "Pain",
     "Pleased",
-    "Pouty",
-    "Rage",
+    "Pouty",  # nadęty, zarozumiały
+    "Rage",  # wściekły
     "Right Hand Fist",
     "Right Hand Grasp",
     "Right Hand Relax",
@@ -391,7 +412,7 @@ shape_keys_cleaned_with_expresions_visemes = [
     "Silly",
     "Smile Full Face",
     "Smile Open Full Face",
-    "Snarl",
+    "Snarl",  # warczy, burczy
     "Surprised",
     "Suspicious",
     "Tired",
@@ -413,8 +434,111 @@ shape_keys_cleaned_with_expresions_visemes = [
     "Vis TH",
     "Vis UW",
     "Vis W",
-    "Wink",
+    "Wink",  # puścić oczko
 ]
+
+
+# A2F emotions mapped to Daz shape keys:
+def editdistance(a, b):
+    """A simple implementation of the Levenshtein edit distance."""
+    m = len(a) + 1
+    n = len(b) + 1
+    dp = [[0 for _ in range(n)] for _ in range(m)]
+    for i in range(1, m):
+        dp[i][0] = i
+    for j in range(1, n):
+        dp[0][j] = j
+    for i in range(1, m):
+        for j in range(1, n):
+            cost = 0 if a[i - 1] == b[j - 1] else 1
+            dp[i][j] = min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost)
+    return dp[m - 1][n - 1]
+
+
+audio2faceEmotionNamesToShapeKeys = {}
+for emotion in audio2faceEmotionNames:
+    min_distance = float("inf")
+    best_match = None
+    for shapekey in shape_keys_cleaned_with_expresions_visemes:
+        distance = editdistance(emotion, shapekey)
+        if distance < min_distance:
+            min_distance = distance
+            best_match = shapekey
+    audio2faceEmotionNamesToShapeKeys[emotion] = best_match
+
+print("Audio2Face Emotion Names to Shape Keys:")
+print(audio2faceEmotionNamesToShapeKeys)
+
+# Emotions mapped to Daz shape keys:
+a2fEmotionNamesToShapeKeys = {
+    "amazement": "Excitement",
+    "anger": "Angry",
+    "cheekiness": "Pouty",  # Confident? Contempt? Fierce? (cheekiness = bezczelny)
+    "disgust": "Disgust",
+    "fear": "Fear",  # Afraid?
+    "grief": "Bereft",  # Ill? (grief = żal, boleść, smutek)
+    "joy": "Happy",
+    "outofbreath": "Shocked",  # Surprised? Shocked? Bereft? Tired?
+    "pain": "Pain",
+    "sadness": "Sad",
+}
+
+a2fBlendshapesToShapeKeys = {
+    "eyeBlinkLeft": "Eye Blink Left",
+    "eyeLookDownLeft": "facs_bs_EyeLookDownLeft",
+    "eyeLookInLeft": "facs_bs_EyeLookInLeft",
+    "eyeLookOutLeft": "facs_bs_EyeLookOutLeft",
+    "eyeLookUpLeft": "facs_bs_EyeLookUpLeft",
+    "eyeSquintLeft": "facs_bs_EyeSquintLeft",
+    "eyeWideLeft": "",
+    "eyeBlinkRight": "Eye Blink Right",
+    "eyeLookDownRight": "facs_bs_EyeLookDownRight",
+    "eyeLookInRight": "facs_bs_EyeLookInRight",
+    "eyeLookOutRight": "facs_bs_EyeLookOutRight",
+    "eyeLookUpRight": "facs_bs_EyeLookUpRight",
+    "eyeSquintRight": "facs_bs_EyeSquintRight",
+    "eyeWideRight": "",
+    "jawForward": "",  # facs_bs_JawRecess -1
+    "jawLeft": "facs_bs_JawLeft",
+    "jawRight": "facs_bs_JawRight",
+    "jawOpen": "Jaw Open",
+    "mouthClose": "Mouth Close",
+    "mouthFunnel": "Mouth Funnel",
+    "mouthPucker": "",
+    "mouthLeft": "",
+    "mouthRight": "",
+    "mouthSmileLeft": "Mouth Smile Left",
+    "mouthSmileRight": "Mouth Smile Right",
+    "mouthFrownLeft": "Mouth Frown",  # add Left
+    "mouthFrownRight": "Mouth Frown",  # add Right
+    "mouthDimpleLeft": "",  # dimple = dołek na policzku
+    "mouthDimpleRight": "",
+    "mouthStretchLeft": "Mouth Stretch",  # add Left
+    "mouthStretchRight": "Mouth Stretch",  # add Right
+    "mouthRollLower": "",
+    "mouthRollUpper": "",
+    "mouthShrugLower": "",
+    "mouthShrugUpper": "",
+    "mouthPressLeft": "Mouth Press",  # add Left
+    "mouthPressRight": "",  # add Right
+    "mouthLowerDownLeft": "",
+    "mouthLowerDownRight": "",
+    "mouthUpperUpLeft": "Mouth Upper Up",  # add Left
+    "mouthUpperUpRight": "",  # add Right
+    "browDownLeft": "facs_BrowDownLeft",
+    "browDownRight": "facs_BrowDownRight",
+    "browInnerUp": "",  # join facs_bs_BrowInnerUpLeft & facs_bs_BrowInnerUpRight
+    "browOuterUpLeft": "facs_BrowOuterUpLeft",
+    "browOuterUpRight": "facs_BrowOuterUpRight",
+    "cheekPuff": "Cheek Puff",
+    "cheekSquintLeft": "Cheek Squint Left",
+    "cheekSquintRight": "Cheek Squint Right",
+    "noseSneerLeft": "Nose Sneer",  # add Left
+    "noseSneerRight": "Nose Sneer",  # add Right
+    "tongueOut": "",
+}
+
+
 shape_keys_with_body_morphs = [
     "Basic",
     "head_bs_AsymmetryBrowHeightLeft",
