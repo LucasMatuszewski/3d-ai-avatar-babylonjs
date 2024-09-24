@@ -1,0 +1,4 @@
+[flake8]
+max-line-length = 99
+; Doesn't work in VSCode on my Ubuntu, so I use settings.json with "flake8.args": ["--max-line-length=99"],
+; (works in Cursor AI on Windows on ShadowPC)
