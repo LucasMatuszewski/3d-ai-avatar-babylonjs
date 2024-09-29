@@ -8,15 +8,15 @@ import {
   EngineFactory,
   SpotLight,
   PointLight,
-  PBRMaterial,
   Color3,
   ShadowGenerator,
-  StandardMaterial,
   AnimationPropertiesOverride,
 } from '@babylonjs/core';
+import { Sound } from '@babylonjs/core/Audio/sound';
 
 import type {
   AbstractEngine,
+  AssetContainer,
   MorphTarget,
   Node,
   Nullable,
@@ -25,25 +25,16 @@ import type {
 
 import '@babylonjs/loaders/glTF/2.0';
 import '@babylonjs/core/Helpers/sceneHelpers';
-
-// import avatarFile from '../../../../3D Models/Michael9/Michael9-packed-resources-Blender4-BSDF-shader-WebP.glb';
+import { createMorphTargetSliderGUI } from './helpers';
+import { AdvancedDynamicTexture, Button, Control } from '@babylonjs/gui';
+import { applyBlendShapes, applyJointTransforms } from './audio2face';
+import type { Audio2FaceExportData } from './audio2face';
+import a2fData from './assets/a2f/a2f_export_bsweight-Adam-from-Edukey-11L-Charlie.json';
 
 // Parcel 2.0 require URL constructor for unsupported file types, instead of normal import
 const avatarFile = new URL(
-  // 'assets/Victoria9-red-dress-include-visible.glb',
   // '../../../../3D Models/Michael9/Michael9-packed-resources-Blender4-BSDF-shader-WebP.glb',
-  // '../../../../3D Models/Michael9/Michael9-v3-JPG-all-face-textures-BSDF-shader.glb',
-  // '../../../../3D Models/Michael9/Michael9-v3-WebP-all-face-textures-BSDF-shader.glb', // WebP
-  // '../../../../3D Models/Michael9/Michael9-v3-WebP+DRACO6-all-face-textures-BSDF-shader.glb', // WebP + DRACO
-  '../../../../3D Models/Michael9/Michael9-optimized-with-more-morphs-as-shape-keys-Draco.glb', // with Blend Shapes / shape keys (I had and error with WebP export)
-  import.meta.url
-).href;
-
-const animationIdle = new URL(
-  // '../../../../3D Models/Michael9/Animation-Michael9-from-DAZ-Mixamo-idle.glb',
-  // '../../../../3D Models/Animations/Mixamo to Daz Genesis 9/Idle-Breathing-Swing.glb',
-  '../../../../3D Models/Animations/Mixamo to Daz Genesis 9/Idle-Breathing-Swing - scale1-applied.glb',
-  // '../../../../3D Models/Animations/Mixamo to Daz Genesis 9/Idle-Breathing-Swing - scale1-applied - modifiers applied.glb',
+  'assets/avaturn-Lucas-blendshapes-idle-animation.glb',
   import.meta.url
 ).href;
 
@@ -132,40 +123,8 @@ const createScene = async (
   // ground.material = grayMaterial;
   ground.receiveShadows = true; // false by default
 
-  // const env = scene.createDefaultEnvironment({
-  //   enableGroundShadow: true,
-  // });
-  // if (env) {
-  //   env.setMainColor(Color3.Gray());
-  // }
-
-  // const box = MeshBuilder.CreateBox(
-  //   'bigBox',
-  //   {
-  //     size: 10,
-  //     sideOrientation: Mesh.BACKSIDE, // only internal side of "face" visible, DOUBLESIDE = both sides of "face" visible
-  //   },
-  //   scene
-  // );
-
-  // const sphere = MeshBuilder.CreateSphere(
-  //   'sphere',
-  //   { segments: 16, diameter: 1 },
-  //   scene
-  // );
-  // sphere.position = new Vector3(0.5, 3, -3);
-
-  // const pbr = new PBRMaterial('pbr', scene);
-  // pbr.metallic = 0; // Between 0 and 1
-  // pbr.roughness = 0; // Between 0 and 1
-  // pbr.alpha = 0.3;
-  // pbr.subSurface.isRefractionEnabled = true;
-  // pbr.subSurface.indexOfRefraction = 1.7;
-  // pbr.subSurface.tintColor = Color3.Green();
-  // sphere.material = pbr;
-
   /**
-   * LOAD AVATAR MESH
+   * LOAD AVATAR CONTAINER
    */
 
   // Import Meshes to the Scene Async: https://doc.babylonjs.com/features/featuresDeepDive/importers/loadingFileTypes#example-pg--WGZLGJ-10491
@@ -182,7 +141,9 @@ const createScene = async (
   // avatarRoot.renderOutline = true;
 
   // avatarRoot.position = new Vector3(0, 0.5, 0);
-  // avatarRoot.rotation = new Vector3(0, Math.PI, 0);
+  // avatarRoot.rotationQuaternion = new Quaternion(0, 0, 0, 1);
+  avatarRoot.rotationQuaternion = null;
+  avatarRoot.rotation = new Vector3(0, 3.6, 0);
 
   // shadowGenerator.addShadowCaster(scene.meshes[2], true); // mesh 0 = ground, mesh 1 = sphere, mesh 2 = root of Genesis9
   shadowGenerator.addShadowCaster(avatarRoot, true);
@@ -190,324 +151,106 @@ const createScene = async (
     avatarContainer.meshes[index].receiveShadows = false;
   }
 
-  const hairCapMesh = avatarContainer.meshes[3];
-  hairCapMesh.isVisible = false; // was visible when moving the camera
-  avatarContainer.meshes[4].isVisible = false; // additional eyebrows (secondary) - without a difference in view = waste of performance
-
   /**
    *
    * Morph Targets Manager
    *
    */
 
-  // Genesis9 meshes 6-10 for body:
-  // 6 -
-  // 7 -
-  // 8 - head
-  // 9 - hands
-  // 10 - legs
-
-  const avatarHeadMesh = avatarContainer.meshes[8];
-  console.log(
-    'avatarBodyMesh.morphTargetManager',
-    avatarHeadMesh.morphTargetManager
-  );
-
-  const avatarHeadAngry =
-    avatarHeadMesh.morphTargetManager?.getTargetByName('Smile Full Face');
-  console.log('avatarHeadAngry', avatarHeadAngry);
-  if (avatarHeadAngry) {
-    avatarHeadAngry.influence = 1;
-  }
+  const advancedTextureUI = AdvancedDynamicTexture.CreateFullscreenUI('UI');
+  createMorphTargetSliderGUI(avatarContainer, scene, advancedTextureUI);
 
   /**
    * ANIMATIONS
    */
-
-  const animationsContainer = await loadAssetContainerAsync(
-    animationIdle,
-    scene
-  );
-
-  const idleAnimationRanges =
-    animationsContainer.skeletons[0].getAnimationRanges();
-  console.log('idleAnimationRanges', idleAnimationRanges);
-  // animationsContainer.meshes[0].rotate(new Vector3(0, 1, 0), Math.PI);
-  // animationsContainer.meshes[0].scaling.setAll(2);
-
-  // animationsContainer.addAllToScene();
-  const animationsContainerCopy = { ...animationsContainer }; // shallow copy without nested objects
-  console.log('animationsContainer', animationsContainerCopy);
-
-  /**
-   *
-   * Merge Animations to scene with re-targeting (target changed to avatar)
-   *
-   */
-
-  // Clone animation tables to the scene
-  // function copied from original BabylonJS AssetContainer.mergeAnimationsTo() + added support for Mixamo name added
-  const targetConverter: Nullable<(target: any) => Nullable<Node>> = (
-    target
-  ) => {
-    // omit mesh and bone transformations:
-    // if (target?.getClassName() !== 'TransformNode') return null;
-
-    // if (target?.name !== 'hip') return null;
-
-    // console.log('target._isMesh', target._isMesh);
-    // console.log('target.getClassName()', target.getClassName());
-
-    // console.log('targetConverter target', target);
-    let node: Nullable<TransformNode | MorphTarget | Node> = null;
-    const targetProperty = target.animations.length
-      ? target.animations[0].targetProperty
-      : '';
-    /*
-            BabylonJS adds special naming to targets that are children of nodes.
-            This name attempts to remove that special naming to get the parent nodes name in case the target
-            can't be found in the node tree
-
-            Ex: Torso_primitive0 likely points to a Mesh primitive. We take away primitive0 and are left with "Torso" which is the name
-            of the primitive's parent.
-        */
-    const name = target.name
-      .split('.')
-      .join('')
-      .split('_primitive')[0]
-      .replace('MixamoRigged', '');
-    // example names from Avatar Mesh: Genesis9.Shape_primitive0, Genesis9.Shape_primitive3
-    // example names from Avatar TransformNode:  Genesis9.Shape, Genesis9
-    // example names from Mixamo animations: "MixamoRiggedGenesis9.Shape_primitive0", "MixamoRiggedGenesis9.Shape"
-    switch (targetProperty) {
-      case 'position':
-      case 'rotationQuaternion':
-        // case 'scaling':
-        node =
-          scene.getTransformNodeByName(target.name) ||
-          scene.getTransformNodeByName(name);
-        break;
-      case 'influence':
-        // console.log('influence node', node);
-        node =
-          scene.getMorphTargetByName(target.name) ||
-          scene.getMorphTargetByName(name);
-        break;
-      default:
-        // node = null;
-        node = scene.getNodeByName(target.name) || scene.getNodeByName(name);
-      // console.log('target.getClassName()', target.getClassName());
-      // console.log('target.animations', target.animations);
-      // console.log('default node', node);
-    }
-
-    // TODO: should I omit some types of nodes? How to stop mesh deformation?
-    const className = node?.getClassName(); // e.g. Mesh, Bone, TransformNode
-    // console.log('node?.getClassName()', className);
-    // console.log('className != TransformNode', className != 'TransformNode');
-    // console.log('targetConverter node', node);
-    // if (className == 'TransformNode') {
-    //   return node as Nullable<Node>;
-    // } else {
-    //   return null;
-    // }
-
-    return node as Nullable<Node>;
-  };
-
-  // const idleAnim = animationsContainer.animationGroups[0];
-  // const avatarIdleAnimationGroup = animationsContainer.mergeAnimationsTo(
-  //   scene,
-  //   idleAnim.animatables,
-  //   targetConverter
-  // );
-  // // console.log('avatarIdleAnimationGroup', avatarIdleAnimationGroup);
-  // avatarIdleAnimationGroup[0].start(true); // starting animation make the mesh less deformed (but still it looks more like a skeleton than the mesh, but at least bones are in correct places)
-  // scene.beginAnimation(avatarRoot, idleAnim.from, idleAnim.to, true);
-
-  /**
-   *
-   * OTHER TESTS of animation transformations
-   *
-   **/
-
-  // Scale the animation keyframes before merging them to the avatar model
-  // const scaleFactor = 2; // Adjust this value as needed
-  // idleAnim.targetedAnimations.forEach((targetAnim) => {
-  //   if (
-  //     targetAnim.animation.targetProperty === 'scaling'
-  //     // targetAnim.animation.targetProperty === 'position'
-  //   ) {
-  //     const keys = targetAnim.animation.getKeys();
-  //     keys.forEach((key) => {
-  //       key.value = key.value.scale(scaleFactor);
-  //     });
-  //   }
-  // });
-
-  // avatarContainer.skeletons[0].copyAnimationRange(animationsContainer.skeletons[0], range.name);
-
-  // const transformNodesAdded: Node['name'][] = [];
-
-  // for (let i = 0; i < animationsContainer.transformNodes.length; i++) {
-  //   animationsContainer.transformNodes[i].scaling = new Vector3(
-  //     1,
-  //     0.1,
-  //     1
-  //   ); /* Vector3.One() */
-  // }
-
-  /**
-   *
-   * Clone of AnimationGroup
-   * Instead of merging animaTable to scene we can also clone AnimationGroups with cloned animations and re-targeting
-   */
-  const targetConverterForAnimationGroup = (target: Node) => {
-    // console.log('target', target);
-    // change target only for hip (for tests)
-    // if (target.name !== 'hip') return target;
-
-    // console.log('transformNodesAdded', transformNodesAdded);
-    // if (
-    //   transformNodesAdded.find((addedNodeName) => addedNodeName === target.name)
-    // ) {
-    //   return target;
-    // }
-    // transformNodesAdded.push(target.name);
-
-    // if (target.name === 'hip') {
-    //   return avatarContainer.transformNodes.find(
-    //     (newTarget) => newTarget.name === 'root'
-    //   );
-    // }
-
-    // const nodeIndex = avatarContainer.transformNodes.findIndex(
-    //   (newTarget) => newTarget.name === target.name
-    // );
-
-    // const newTarget =
-    //   avatarContainer.transformNodes[nodeIndex + 2] ||
-    //   avatarContainer.transformNodes[nodeIndex];
-    // return newTarget;
-
-    const newTarget = avatarContainer.transformNodes.find(
-      (newTarget) => newTarget.name === target.name
-    );
-    // console.log('target.getClassName()', target.getClassName());
-    // console.log('newTarget.getClassName()', newTarget?.getClassName());
-
-    console.log('target', target);
-    console.log('newTarget', newTarget);
-    return newTarget;
-  };
-
-  // avatarContainer.animationGroups.push(
-  //   animationsContainer.animationGroups[0].clone(
-  //     'idle',
-  //     targetConverterForAnimationGroup,
-  //     false
-  //   )
-  // );
-
-  // avatarContainer.animationGroups[0].start(true);
-
-  // const hipIndex = animationsContainer.transformNodes.findIndex(
-  //   (node) => node.name === 'hip'
-  // );
-  // const avatarGenesis9Index = avatarContainer.transformNodes.findIndex(
-  //   (node) => node.name === 'root'
-  // );
-  // console.log('avatarGenesis9Index', avatarGenesis9Index);
-  // const clonedNode = animationsContainer.transformNodes[hipIndex].clone(
-  //   'hip',
-  //   avatarContainer.transformNodes[avatarGenesis9Index]
-  // );
-  // console.log('clonedNode', clonedNode);
 
   scene.animationPropertiesOverride = new AnimationPropertiesOverride(); // we can do the same for player if we use player animations instead of scene animations
   scene.animationPropertiesOverride.enableBlending = true;
   scene.animationPropertiesOverride.blendingSpeed = 0.01; // very slow to make it visible
   scene.animationPropertiesOverride.loopMode = 1;
 
-  // Rotate the mesh by 90* around the X-axes
-  // avatarRoot.rotate(new Vector3(1, 0, 0), Math.PI / 2);
+  // Enable blending for the idle animation group
+  // const idleAnimationGroup = avatarContainer.animationGroups[0];
+  // idleAnimationGroup.enableBlending = true;
+  // idleAnimationGroup.blendingSpeed = 0.01; // very slow to make it visible
+  // idleAnimationGroup.play(true);
 
-  // avatarRoot.scaling.setAll(0.01);
+  // TODO: Parcel fetch and parse json file automatically, but with Webpack we need to do it manually
+  const typedA2fData = a2fData as Audio2FaceExportData;
 
-  // animationsContainer.addToScene()
-  // const skeleton = animationsContainer.skeletons[0]
-  // const idleAnim = skeleton.getAnimationRange("")
+  // Create animation state
+  interface AnimationState {
+    isPlaying: boolean;
+    currentFrame: number;
+    totalFrames: number;
+    audio: Sound | null;
+    // audioStartTime: number | null;
+  }
+  const animationState: AnimationState = {
+    isPlaying: false,
+    currentFrame: 0,
+    totalFrames: typedA2fData.weightMat.length,
+    audio: null,
+    // audioStartTime: null,
+  };
 
-  // animationsContainer.geometries = avatarContainer.geometries;
-  // animationsContainer.materials = avatarContainer.materials;
-  // animationsContainer.meshes = avatarContainer.meshes;
-  // animationsContainer.rootNodes = avatarContainer.rootNodes;
-  // animationsContainer.skeletons = avatarContainer.skeletons;
-  // // animationsContainer.transformNodes = avatarContainer.transformNodes;
+  // Update play/stop functions
+  const playAnimation = () => {
+    animationState.isPlaying = true;
+    animationState.currentFrame = 0;
+  };
 
-  // const idleAnim = animationsContainer.animationGroups[0];
-  // const avatarSkeleton = avatarContainer.skeletons[0];
-  // const animationsCount = idleAnim.targetedAnimations.length - 1;
+  const stopAnimation = () => {
+    animationState.isPlaying = false;
+    animationState.currentFrame = 0;
+  };
 
-  // // Copy transform Nodes from Animation to Avatar
-  // animationsContainer.transformNodes.forEach((animationNode, index) => {
-  //   index < 5 && console.log('animationNode', { ...animationNode });
-  //   const avatarNodeIndex = avatarContainer.transformNodes.findIndex(
-  //     (avatarNode) => avatarNode.name === animationNode.name
-  //   );
-  //   const avatarNode = avatarContainer.transformNodes[avatarNodeIndex];
-  //   if (avatarNode && animationNode) {
-  //     avatarNode.animations = animationNode.animations;
-  //     // animationNode = avatarNode;
-  //     avatarContainer.transformNodes[avatarNodeIndex] = animationNode;
-  //   }
-  // });
+  // Create GUI
+  const button = Button.CreateSimpleButton('playPauseButton', 'Play');
+  button.width = '150px';
+  button.height = '40px';
+  button.color = 'white';
+  button.cornerRadius = 20;
+  button.background = 'green';
+  button.top = '-10px';
+  button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+  button.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+  button.onPointerUpObservable.add(() => {
+    if (animationState.isPlaying) {
+      stopAnimation();
+      button.textBlock!.text = 'Play';
+    } else {
+      playAnimation();
+      button.textBlock!.text = 'Stop';
+    }
+  });
+  advancedTextureUI.addControl(button);
 
-  // idleAnim.targetedAnimations.forEach((targetedAnimation, index) => {
-  //   index < 5 && console.log('targetedAnimation', { ...targetedAnimation });
+  // Animation function
+  const animate = () => {
+    if (animationState.isPlaying) {
+      applyBlendShapes(
+        animationState.currentFrame,
+        typedA2fData,
+        avatarContainer
+      );
+      applyJointTransforms(
+        animationState.currentFrame,
+        typedA2fData,
+        avatarRoot // TODO: check if it works, if skeleton is in the root
+      );
 
-  //   // TODO: target skeleton's bones? Or avatarContainer.transformNodes?
-  //   // Copy animations from original target to animations array of a new target?
-  //   targetedAnimation.target = {
-  //     ...avatarSkeleton.bones[
-  //       avatarSkeleton.getBoneIndexByName(targetedAnimation.target.name)
-  //     ],
-  //     animations: targetedAnimation.target.animations,
-  //   };
-  //   // if (targetedAnimation.target.name === 'Armature') {
-  //   //   targetedAnimation.target = scene.getMeshByName('Armature'); // Replace with the actual name of your skeleton
-  //   // }
+      animationState.currentFrame =
+        (animationState.currentFrame + 1) % animationState.totalFrames;
 
-  //   if (index >= animationsCount) {
-  //     console.log(
-  //       'modified animationsContainer idleAnim',
-  //       animationsContainer.animationGroups[0]
-  //     );
-  //     avatarContainer.animationGroups = animationsContainer.animationGroups;
+      if (animationState.currentFrame >= animationState.totalFrames) {
+        stopAnimation();
+      }
+    }
+  };
 
-  //     avatarContainer.addAllToScene(); // add all assets (meshes, animations, materials, textures, etc.) loaded from the file
-
-  //     console.log('modified avatarContainer', avatarContainer);
-
-  //     // animationsContainer.addAllToScene();
-  //     scene.beginAnimation(
-  //       avatarSkeleton,
-  //       avatarContainer.animationGroups[0].from,
-  //       avatarContainer.animationGroups[0].to,
-  //       true
-  //     );
-  //     scene.beginAnimation(
-  //       avatarRoot,
-  //       avatarContainer.animationGroups[0].from,
-  //       avatarContainer.animationGroups[0].to,
-  //       true
-  //     );
-  //     idleAnim.start(); // not needed - this baked in animation starts automatically when mesh is added to the scene
-  //     avatarContainer.animationGroups[0].start();
-  //   }
-  // });
-
-  // player
+  // Add animate function to the render loop
+  scene.registerBeforeRender(animate);
 
   /**
    * CAMERAS
