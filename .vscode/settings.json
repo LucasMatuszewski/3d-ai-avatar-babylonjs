@@ -1,0 +1,8 @@
+{
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/Blender",
+    "${workspaceFolder}/Blender/venv/lib/python3.12/site-packages"
+  ],
+  "python.defaultInterpreterPath": "${workspaceFolder}/Blender/venv/bin/python",
+  "python.terminal.activateEnvironment": true
+}

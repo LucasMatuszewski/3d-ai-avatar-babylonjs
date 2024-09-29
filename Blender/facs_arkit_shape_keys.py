@@ -1,12 +1,14 @@
 import sys
 import os
 
-# Add the directory containing your script to the Python path
+
+# This script runs in Blender's local Python env, so scripts imported from this folder won't work by default.
+# To make them work, add the directory containing this script to the Python path:
 script_dir = os.path.dirname(os.path.abspath(__file__))
 if script_dir not in sys.path:
     sys.path.append(script_dir)
 
-# Now you can import your local script
+# Now we can import other local scripts from the same directory
 from count_shapekeys_number import count_shapekeys_number
 
 count_shapekeys_number()
@@ -490,23 +492,23 @@ a2fBlendshapesToShapeKeys = {
     "eyeLookOutLeft": "facs_bs_EyeLookOutLeft",
     "eyeLookUpLeft": "facs_bs_EyeLookUpLeft",
     "eyeSquintLeft": "facs_bs_EyeSquintLeft",
-    "eyeWideLeft": "",
+    "eyeWideLeft": "eyeWideLeft",  # manually added by me
     "eyeBlinkRight": "Eye Blink Right",
     "eyeLookDownRight": "facs_bs_EyeLookDownRight",
     "eyeLookInRight": "facs_bs_EyeLookInRight",
     "eyeLookOutRight": "facs_bs_EyeLookOutRight",
     "eyeLookUpRight": "facs_bs_EyeLookUpRight",
     "eyeSquintRight": "facs_bs_EyeSquintRight",
-    "eyeWideRight": "",
-    "jawForward": "",  # facs_bs_JawRecess -1
+    "eyeWideRight": "eyeWideRight",  # manually added by me
+    "jawForward": "",  # facs_bs_JawRecess -1 ???
     "jawLeft": "facs_bs_JawLeft",
     "jawRight": "facs_bs_JawRight",
     "jawOpen": "Jaw Open",
     "mouthClose": "Mouth Close",
     "mouthFunnel": "Mouth Funnel",
-    "mouthPucker": "",
-    "mouthLeft": "",
-    "mouthRight": "",
+    "mouthPucker": "",  # zmarszczone usta
+    "mouthLeft": "facs_bs_MouthLeft",
+    "mouthRight": "facs_bs_MouthRight",
     "mouthSmileLeft": "Mouth Smile Left",
     "mouthSmileRight": "Mouth Smile Right",
     "mouthFrownLeft": "Mouth Frown",  # add Left
