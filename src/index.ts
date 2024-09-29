@@ -11,6 +11,7 @@ import {
   Color3,
   ShadowGenerator,
   AnimationPropertiesOverride,
+  Engine,
 } from '@babylonjs/core';
 import { Sound } from '@babylonjs/core/Audio/sound';
 
@@ -37,6 +38,11 @@ const avatarFile = new URL(
   'assets/avaturn-Lucas-blendshapes-idle-animation.glb',
   import.meta.url
 ).href;
+
+const audioFile = new URL(
+  'assets/a2f/EN-11Labs-Adam-from-Edukey-Charlie.wav',
+  import.meta.url
+).href.split('?')[0]; // Parcel 2.0 adds ?2342342 version id to the file path, it causes error in Babylonjs
 
 /**
  * TODO:
@@ -183,27 +189,17 @@ const createScene = async (
     isPlaying: boolean;
     currentFrame: number;
     totalFrames: number;
-    audio: Sound | null;
-    // audioStartTime: number | null;
   }
   const animationState: AnimationState = {
     isPlaying: false,
     currentFrame: 0,
     totalFrames: typedA2fData.weightMat.length,
-    audio: null,
-    // audioStartTime: null,
   };
 
-  // Update play/stop functions
-  const playAnimation = () => {
-    animationState.isPlaying = true;
-    animationState.currentFrame = 0;
-  };
-
-  const stopAnimation = () => {
-    animationState.isPlaying = false;
-    animationState.currentFrame = 0;
-  };
+  const audio = new Sound('Music', audioFile, scene, null, {
+    autoplay: false,
+    spatialSound: true,
+  });
 
   // Create GUI
   const button = Button.CreateSimpleButton('playPauseButton', 'Play');
@@ -215,13 +211,29 @@ const createScene = async (
   button.top = '-10px';
   button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
   button.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+
+  const playAnimation = () => {
+    animationState.isPlaying = true;
+    animationState.currentFrame = 0;
+
+    if (Engine.audioEngine?.audioContext?.state === 'suspended') {
+      Engine.audioEngine.audioContext.resume();
+    }
+    audio.play();
+    button.textBlock!.text = 'Stop';
+  };
+
+  const stopAnimation = () => {
+    animationState.isPlaying = false;
+    animationState.currentFrame = 0;
+    audio.stop();
+    button.textBlock!.text = 'Play';
+  };
   button.onPointerUpObservable.add(() => {
     if (animationState.isPlaying) {
       stopAnimation();
-      button.textBlock!.text = 'Play';
     } else {
       playAnimation();
-      button.textBlock!.text = 'Stop';
     }
   });
   advancedTextureUI.addControl(button);
@@ -240,8 +252,8 @@ const createScene = async (
         avatarRoot // TODO: check if it works, if skeleton is in the root
       );
 
-      animationState.currentFrame =
-        (animationState.currentFrame + 1) % animationState.totalFrames;
+      animationState.currentFrame++;
+      // We can use modulo to loop: animationState.currentFrame = (animationState.currentFrame + 1) % animationState.totalFrames;
 
       if (animationState.currentFrame >= animationState.totalFrames) {
         stopAnimation();
@@ -317,6 +329,12 @@ const init = async () => {
   // the canvas/window resize event handler (to keep same proportions of rendered scene)
   window.addEventListener('resize', () => {
     engine.resize();
+  });
+
+  document.addEventListener('click', () => {
+    if (Engine.audioEngine && !Engine.audioEngine.unlocked) {
+      Engine.audioEngine?.unlock();
+    }
   });
 
   // run the render loop
