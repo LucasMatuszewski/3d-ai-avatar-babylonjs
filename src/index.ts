@@ -189,16 +189,55 @@ const createScene = async (
     isPlaying: boolean;
     currentFrame: number;
     totalFrames: number;
+    audioReady: number | null;
+    audioStartTime: number | null;
+    animationStartTime: number | null;
+    audioStopTime: number | null;
+    animationStopTime: number | null;
   }
   const animationState: AnimationState = {
     isPlaying: false,
     currentFrame: 0,
     totalFrames: typedA2fData.weightMat.length,
+    audioReady: null,
+    audioStartTime: null,
+    animationStartTime: null,
+    audioStopTime: null,
+    animationStopTime: null,
   };
 
-  const audio = new Sound('Music', audioFile, scene, null, {
-    autoplay: false,
-    spatialSound: true,
+  const audio = new Sound(
+    'Speech',
+    audioFile,
+    scene,
+    () => {
+      // readyToPlayCallback ensures audio is loaded and ready
+      // audio.currentTime is 0 when audio is ready AND when it ended, we can't use it for this.
+      animationState.audioReady = performance.now() / 1000;
+      console.log('Audio is ready time (s):', animationState.audioReady);
+    },
+    {
+      autoplay: false,
+      loop: false,
+      // spatialSound: true,
+      volume: 1.0,
+    }
+  );
+
+  // Listen for the audio stop event and log the stop time
+  audio.onEndedObservable.add(() => {
+    animationState.audioStopTime = performance.now() / 1000;
+    console.log('Audio stop time (s):', animationState.audioStopTime);
+
+    // Reset play state after audio ends
+    // animationState.isPlaying = false;
+
+    if (animationState.audioStartTime !== null) {
+      console.log(
+        'Audio duration (s):',
+        animationState.audioStopTime - animationState.audioStartTime
+      );
+    }
   });
 
   // Create GUI
@@ -220,6 +259,9 @@ const createScene = async (
       Engine.audioEngine.audioContext.resume();
     }
     audio.play();
+    // Log the exact start time of audio
+    animationState.audioStartTime = performance.now() / 1000;
+    console.log('Audio start time (s): ', animationState.audioStartTime);
     button.textBlock!.text = 'Stop';
   };
 
@@ -229,11 +271,14 @@ const createScene = async (
     audio.stop();
     button.textBlock!.text = 'Play';
   };
+
   button.onPointerUpObservable.add(() => {
     if (animationState.isPlaying) {
       stopAnimation();
-    } else {
+    } else if (animationState.audioReady !== null) {
       playAnimation();
+    } else {
+      console.log('Audio is not ready');
     }
   });
   advancedTextureUI.addControl(button);
@@ -251,12 +296,30 @@ const createScene = async (
         typedA2fData,
         avatarRoot // TODO: check if it works, if skeleton is in the root
       );
-
+      if (animationState.currentFrame === 0) {
+        // TODO: is it a correct place to log this?
+        animationState.animationStartTime = performance.now() / 1000;
+        console.log(
+          'Blendshape application started at (s):',
+          animationState.animationStartTime
+        );
+      }
       animationState.currentFrame++;
       // We can use modulo to loop: animationState.currentFrame = (animationState.currentFrame + 1) % animationState.totalFrames;
 
       if (animationState.currentFrame >= animationState.totalFrames) {
         stopAnimation();
+        animationState.animationStopTime = performance.now() / 1000;
+        console.log(
+          'Blendshape application ended at (s):',
+          animationState.animationStopTime
+        );
+        if (animationState.animationStartTime) {
+          console.log(
+            'Blendshape application took (s):',
+            animationState.animationStopTime - animationState.animationStartTime
+          );
+        }
       }
     }
   };
