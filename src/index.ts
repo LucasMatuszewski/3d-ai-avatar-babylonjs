@@ -191,6 +191,7 @@ const createScene = async (
 
   // Load Audio2Face data first to make animation less glitchy
   const precomputedBlendShapes = precomputeBlendShapes(
+    avatarContainer,
     typedA2fData.weightMat,
     typedA2fData.facsNames
   );
@@ -300,8 +301,8 @@ const createScene = async (
   const animate = () => {
     if (animationState.isPlaying) {
       applyPrecomputedBlendShapes(
-        avatarContainer,
-        precomputedBlendShapes[animationState.currentFrame]
+        precomputedBlendShapes,
+        animationState.currentFrame
       );
       // applyBlendShapes(
       //   animationState.currentFrame,

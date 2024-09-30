@@ -1,6 +1,6 @@
 import { Vector3, Quaternion } from '@babylonjs/core';
 import type {
-  AbstractMesh,
+  MorphTarget,
   AssetContainer,
   Bone,
   Skeleton,
@@ -19,41 +19,65 @@ export interface Audio2FaceExportData {
   translations: number[][][]; // A 3D array representing translation vectors for each joint in each frame
 }
 
-interface PrecomputedFrame {
-  [targetName: string]: number;
+interface PrecomputedTarget {
+  target: MorphTarget;
+  name: string;
+  influences: Float32Array;
 }
 
 export function precomputeBlendShapes(
+  avatarContainer: AssetContainer,
   weightMat: Audio2FaceExportData['weightMat'],
   facsNames: Audio2FaceExportData['facsNames']
-): PrecomputedFrame[] {
-  return weightMat.map((weights) => {
-    const frame: PrecomputedFrame = {};
-    for (let i = 0; i < facsNames.length; i++) {
-      frame[facsNames[i]] = weights[i];
-    }
-    return frame;
-  });
-}
+): PrecomputedTarget[] {
+  const targets: PrecomputedTarget[] = [];
+  const frameCount = weightMat.length;
 
-export function applyPrecomputedBlendShapes(
-  avatarContainer: AssetContainer,
-  precomputedFrame: PrecomputedFrame
-): void {
   avatarContainer.morphTargetManagers.forEach((manager) => {
     if (manager) {
       for (let i = 0; i < manager.numTargets; i++) {
         const target = manager.getTarget(i);
-        if (
-          target &&
-          target.name &&
-          precomputedFrame.hasOwnProperty(target.name)
-        ) {
-          target.influence = precomputedFrame[target.name];
+        if (target && target.name) {
+          targets.push({
+            target,
+            name: target.name,
+            influences: new Float32Array(frameCount),
+          });
         }
       }
     }
   });
+
+  // Precompute influences for each target for all frames
+  for (let frameIndex = 0; frameIndex < frameCount; frameIndex++) {
+    const weights = weightMat[frameIndex];
+    for (let i = 0; i < facsNames.length; i++) {
+      const value = Math.fround(weights[i]); // Use Math.fround for 32-bit float precision
+      if (value !== 0) {
+        // Update all targets with matching name
+        for (let j = 0; j < targets.length; j++) {
+          if (targets[j].name === facsNames[i]) {
+            targets[j].influences[frameIndex] = value;
+          }
+        }
+      }
+    }
+  }
+
+  return targets;
+}
+
+export function applyPrecomputedBlendShapes(
+  precomputed: PrecomputedTarget[],
+  frameIndex: number
+): void {
+  for (let i = 0; i < precomputed.length; i++) {
+    const targetData = precomputed[i];
+    const newInfluence = targetData.influences[frameIndex];
+    if (Math.abs(targetData.target.influence - newInfluence) > 0.001) {
+      targetData.target.influence = newInfluence;
+    }
+  }
 }
 
 /**
