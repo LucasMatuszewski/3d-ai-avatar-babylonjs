@@ -1,5 +1,10 @@
 import { Vector3, Quaternion } from '@babylonjs/core';
-import type { AbstractMesh, AssetContainer } from '@babylonjs/core';
+import type {
+  AbstractMesh,
+  AssetContainer,
+  Bone,
+  Skeleton,
+} from '@babylonjs/core';
 import { setMorphTargetInfluence } from './helpers';
 
 export interface Audio2FaceExportData {
@@ -14,7 +19,42 @@ export interface Audio2FaceExportData {
   translations: number[][][]; // A 3D array representing translation vectors for each joint in each frame
 }
 
-// TODO: join applyBlendShapes & applyJointTransforms in one function to call it only once?
+interface PrecomputedFrame {
+  [targetName: string]: number;
+}
+
+export function precomputeBlendShapes(
+  weightMat: Audio2FaceExportData['weightMat'],
+  facsNames: Audio2FaceExportData['facsNames']
+): PrecomputedFrame[] {
+  return weightMat.map((weights) => {
+    const frame: PrecomputedFrame = {};
+    for (let i = 0; i < facsNames.length; i++) {
+      frame[facsNames[i]] = weights[i];
+    }
+    return frame;
+  });
+}
+
+export function applyPrecomputedBlendShapes(
+  avatarContainer: AssetContainer,
+  precomputedFrame: PrecomputedFrame
+): void {
+  avatarContainer.morphTargetManagers.forEach((manager) => {
+    if (manager) {
+      for (let i = 0; i < manager.numTargets; i++) {
+        const target = manager.getTarget(i);
+        if (
+          target &&
+          target.name &&
+          precomputedFrame.hasOwnProperty(target.name)
+        ) {
+          target.influence = precomputedFrame[target.name];
+        }
+      }
+    }
+  });
+}
 
 /**
  * Applies blend shape weights to the avatar for a given frame.
@@ -37,41 +77,53 @@ export interface Audio2FaceExportData {
  */
 export function applyBlendShapes(
   frameIndex: number,
-  a2faceData: Audio2FaceExportData,
+  weightMat: Audio2FaceExportData['weightMat'],
+  facsNames: Audio2FaceExportData['facsNames'],
   assetContainer: AssetContainer
 ) {
-  const weights = a2faceData.weightMat[frameIndex];
-  for (let i = 0; i < a2faceData.facsNames.length; i++) {
-    const targetName = a2faceData.facsNames[i];
+  const weights = weightMat[frameIndex];
+  for (let i = 0; i < facsNames.length; i++) {
+    const targetName = facsNames[i];
     const influence = weights[i];
     setMorphTargetInfluence(assetContainer, targetName, influence);
   }
 }
 
-// Apply joint transformations
+export function preselectJoints(skeleton: Skeleton, joints: string[]): Bone[] {
+  const preselectedJoints: Bone[] = [];
+  if (skeleton && joints.length > 0) {
+    for (const jointName of joints) {
+      const bone = skeleton.bones.find(
+        (b) =>
+          b.name === jointName ||
+          (jointName === 'eye_R' && b.name === 'RightEye') ||
+          (jointName === 'eye_L' && b.name === 'LeftEye')
+      );
+      if (bone) {
+        preselectedJoints.push(bone);
+      } // TODO: throw error/warning otherwise?
+    }
+  }
+
+  return preselectedJoints;
+}
+
 export function applyJointTransforms(
   frameIndex: number,
-  a2faceData: Audio2FaceExportData,
-  mesh: AbstractMesh
+  rotationsData: Audio2FaceExportData['rotations'],
+  translationsData: Audio2FaceExportData['translations'],
+  preselectedJoints: Bone[]
 ) {
-  const rotations = a2faceData.rotations[frameIndex];
-  const translations = a2faceData.translations[frameIndex];
+  const rotations = rotationsData[frameIndex];
+  const translations = translationsData[frameIndex];
 
-  if (mesh.skeleton && a2faceData.joints) {
-    for (let i = 0; i < a2faceData.joints.length; i++) {
-      const joint = mesh.skeleton.bones.find(
-        // TODO: temporary fix for the eye bones, we should rename them in the model
-        (b) =>
-          b.name === a2faceData.joints[i] ||
-          (a2faceData.joints[i] === 'eye_R' && b.name === 'RightEye') ||
-          (a2faceData.joints[i] === 'eye_L' && b.name === 'LeftEye')
-      );
-      if (joint) {
-        joint.setRotationQuaternion(Quaternion.FromArray(rotations[i]));
-        joint.setPosition(Vector3.FromArray(translations[i]));
-      }
+  for (let i = 0; i < preselectedJoints.length; i++) {
+    const joint = preselectedJoints[i];
+    if (joint) {
+      joint.setRotationQuaternion(Quaternion.FromArray(rotations[i]));
+      joint.setPosition(Vector3.FromArray(translations[i]));
     }
-  } // TODO: throw error otherwise?
+  }
 }
 
 // morph targets taken from Avaturn model, based on ARKit + visemes

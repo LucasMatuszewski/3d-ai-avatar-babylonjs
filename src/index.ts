@@ -28,7 +28,12 @@ import '@babylonjs/loaders/glTF/2.0';
 import '@babylonjs/core/Helpers/sceneHelpers';
 import { createMorphTargetSliderGUI } from './helpers';
 import { AdvancedDynamicTexture, Button, Control } from '@babylonjs/gui';
-import { applyBlendShapes, applyJointTransforms } from './audio2face';
+import {
+  applyJointTransforms,
+  applyPrecomputedBlendShapes,
+  precomputeBlendShapes,
+  preselectJoints,
+} from './audio2face';
 import type { Audio2FaceExportData } from './audio2face';
 import a2fData from './assets/a2f/a2f_export_bsweight-Adam-from-Edukey-11L-Charlie.json';
 
@@ -184,6 +189,17 @@ const createScene = async (
   // TODO: Parcel fetch and parse json file automatically, but with Webpack we need to do it manually
   const typedA2fData = a2fData as Audio2FaceExportData;
 
+  // Load Audio2Face data first to make animation less glitchy
+  const precomputedBlendShapes = precomputeBlendShapes(
+    typedA2fData.weightMat,
+    typedA2fData.facsNames
+  );
+  console.log('precomputedBlendShapes', precomputedBlendShapes);
+  const preselectedJoints = preselectJoints(
+    avatarContainer.skeletons[0],
+    typedA2fData.joints
+  );
+
   // Create animation state
   interface AnimationState {
     isPlaying: boolean;
@@ -258,10 +274,7 @@ const createScene = async (
     if (Engine.audioEngine?.audioContext?.state === 'suspended') {
       Engine.audioEngine.audioContext.resume();
     }
-    audio.play();
-    // Log the exact start time of audio
-    animationState.audioStartTime = performance.now() / 1000;
-    console.log('Audio start time (s): ', animationState.audioStartTime);
+
     button.textBlock!.text = 'Stop';
   };
 
@@ -286,23 +299,34 @@ const createScene = async (
   // Animation function
   const animate = () => {
     if (animationState.isPlaying) {
-      applyBlendShapes(
-        animationState.currentFrame,
-        typedA2fData,
-        avatarContainer
+      applyPrecomputedBlendShapes(
+        avatarContainer,
+        precomputedBlendShapes[animationState.currentFrame]
       );
+      // applyBlendShapes(
+      //   animationState.currentFrame,
+      //   typedA2fData.weightMat,
+      //   typedA2fData.facsNames,
+      //   avatarContainer
+      // );
       applyJointTransforms(
         animationState.currentFrame,
-        typedA2fData,
-        avatarRoot // TODO: check if it works, if skeleton is in the root
+        typedA2fData.rotations,
+        typedA2fData.translations,
+        preselectedJoints
       );
       if (animationState.currentFrame === 0) {
-        // TODO: is it a correct place to log this?
         animationState.animationStartTime = performance.now() / 1000;
         console.log(
           'Blendshape application started at (s):',
           animationState.animationStartTime
         );
+
+        // Start audio.play() after animation starts because it takes more time to load blendshapes then to load audio
+        audio.play();
+        // Log the exact start time of audio
+        animationState.audioStartTime = performance.now() / 1000;
+        console.log('Audio start time (s): ', animationState.audioStartTime);
       }
       animationState.currentFrame++;
       // We can use modulo to loop: animationState.currentFrame = (animationState.currentFrame + 1) % animationState.totalFrames;
@@ -374,17 +398,18 @@ const init = async () => {
     antialias: true,
     useExactSrgbConversions: true,
   });
-  console.log('engine.isWebGPU', engine.isWebGPU);
-
-  // Show loading spinner (we have to hide it manually with `engine.hideLoadingUI();` when scene will be loaded)
-  engine.displayLoadingUI();
 
   // Load the WebGL engine
   // const engine = new Engine(canvas, true, {
   //   preserveDrawingBuffer: true, // is it deprecated option?
   //   stencil: true, // Stencil buffer texture
-  //   powerPreference: 'low-power' | 'high-performance';
+  //   powerPreference: 'low-power', // 'high-performance'
   // });
+
+  console.log('engine.isWebGPU', engine.isWebGPU);
+
+  // Show loading spinner (we have to hide it manually with `engine.hideLoadingUI();` when scene will be loaded)
+  engine.displayLoadingUI();
 
   // call the createScene function
   const scene = await createScene(engine, canvas);
