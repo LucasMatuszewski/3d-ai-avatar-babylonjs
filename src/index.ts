@@ -172,6 +172,39 @@ const createScene = async (
   createMorphTargetSliderGUI(avatarContainer, scene, advancedTextureUI);
 
   /**
+   * CAMERAS
+   */
+
+  // Create an UniversalCamera (best for First Person games), and set its position to {x: 0, y: 5, z: -10}
+  // const camera = new UniversalCamera('camera1', new Vector3(0, 5, -10), scene);
+
+  // Create Camera rotating around the targeted point:
+  const camera = new ArcRotateCamera(
+    'camera1',
+    11, // alpha = rotate left and right
+    1.4, // beta = rotate up and down
+    1.5, // radius = zoom / distance
+    new Vector3(0, 3.15, 0), // Target the camera on the avatar's head
+    scene
+  );
+  camera.wheelPrecision = 100; // speed of scrolling (higher = slower)
+  camera.minZ = 0.2; // how close we can zoom to the mesh before we see through it (default is 1)
+  // camera.lowerRadiusLimit = 0.5; // how close we can zoom to the target (default is without limits = we can get on opposite side of the target)
+  // camera.upperRadiusLimit = 10; // how far away we can zoom out of the target
+  // camera.radius = 1; // "zoom" of the camera
+
+  // Target the camera to scene origin
+  // camera.setTarget(Vector3.Zero());
+  // camera.setTarget(avatarRoot);
+
+  // Attach the camera to the canvas
+  // camera.attachControl(canvas, false); // two arguments not required anymore (backward compatibility)
+  camera.attachControl();
+
+  // Hide the Loading Spinner and show the scene:
+  engine.hideLoadingUI();
+
+  /**
    * ANIMATIONS
    */
 
@@ -200,6 +233,12 @@ const createScene = async (
     avatarContainer.skeletons[0],
     typedA2fData.joints
   );
+
+  // Precompile Shaders and make Babylon allocate GPU memory for all morph targets:
+  precomputedBlendShapes.forEach((targetData) => {
+    targetData.target.influence = 0;
+  });
+  scene.render();
 
   // Create animation state
   interface AnimationState {
@@ -276,6 +315,21 @@ const createScene = async (
       Engine.audioEngine.audioContext.resume();
     }
 
+    // Apply the first frame's morph targets and joints to make sure we start animation faster then audio
+    applyPrecomputedBlendShapes(
+      precomputedBlendShapes,
+      animationState.currentFrame
+    );
+    applyJointTransforms(
+      animationState.currentFrame,
+      typedA2fData.rotations,
+      typedA2fData.translations,
+      preselectedJoints
+    );
+
+    // Render the scene to ensure the first frame is displayed (and shaders compiled)
+    scene.render();
+
     button.textBlock!.text = 'Stop';
   };
 
@@ -351,39 +405,6 @@ const createScene = async (
 
   // Add animate function to the render loop
   scene.registerBeforeRender(animate);
-
-  /**
-   * CAMERAS
-   */
-
-  // Create an UniversalCamera (best for First Person games), and set its position to {x: 0, y: 5, z: -10}
-  // const camera = new UniversalCamera('camera1', new Vector3(0, 5, -10), scene);
-
-  // Create Camera rotating around the targeted point:
-  const camera = new ArcRotateCamera(
-    'camera1',
-    11, // alpha = rotate left and right
-    1.4, // beta = rotate up and down
-    1.5, // radius = zoom / distance
-    new Vector3(0, 3.15, 0), // Target the camera on the avatar's head
-    scene
-  );
-  camera.wheelPrecision = 100; // speed of scrolling (higher = slower)
-  camera.minZ = 0.2; // how close we can zoom to the mesh before we see through it (default is 1)
-  // camera.lowerRadiusLimit = 0.5; // how close we can zoom to the target (default is without limits = we can get on opposite side of the target)
-  // camera.upperRadiusLimit = 10; // how far away we can zoom out of the target
-  // camera.radius = 1; // "zoom" of the camera
-
-  // Target the camera to scene origin
-  // camera.setTarget(Vector3.Zero());
-  // camera.setTarget(avatarRoot);
-
-  // Attach the camera to the canvas
-  // camera.attachControl(canvas, false); // two arguments not required anymore (backward compatibility)
-  camera.attachControl();
-
-  // Hide the Loading Spinner and show the scene:
-  engine.hideLoadingUI();
 
   // Return the created scene
   return scene;
