@@ -10,17 +10,17 @@
   "author": "Lucas Matuszewski",
   "license": "ISC",
   "dependencies": {
-    "@babylonjs/core": "^7.21.5",
-    "@babylonjs/gui": "^7.21.5",
-    "@babylonjs/inspector": "^7.21.5",
-    "@babylonjs/ktx2decoder": "^7.21.5",
-    "@babylonjs/loaders": "^7.21.5",
-    "@babylonjs/materials": "^7.21.5",
-    "@babylonjs/post-processes": "^7.21.5",
-    "@babylonjs/procedural-textures": "^7.21.5",
-    "@babylonjs/serializers": "^7.21.5",
-    "@babylonjs/viewer": "^7.21.5",
-    "babylonjs": "^7.21.5"
+    "@babylonjs/core": "^7.27.0",
+    "@babylonjs/gui": "^7.27.0",
+    "@babylonjs/inspector": "^7.27.0",
+    "@babylonjs/ktx2decoder": "^7.27.0",
+    "@babylonjs/loaders": "^7.27.0",
+    "@babylonjs/materials": "^7.27.0",
+    "@babylonjs/post-processes": "^7.27.0",
+    "@babylonjs/procedural-textures": "^7.27.0",
+    "@babylonjs/serializers": "^7.27.0",
+    "@babylonjs/viewer": "^7.27.0",
+    "babylonjs": "^7.27.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
