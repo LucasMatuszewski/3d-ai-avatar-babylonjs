@@ -22,7 +22,7 @@ export interface Audio2FaceExportData {
 interface PrecomputedTarget {
   target: MorphTarget;
   name: string;
-  influences: Float32Array;
+  influences: Uint16Array;
 }
 
 export function precomputeBlendShapes(
@@ -41,7 +41,7 @@ export function precomputeBlendShapes(
           targets.push({
             target,
             name: target.name,
-            influences: new Float32Array(frameCount),
+            influences: new Uint16Array(frameCount),
           });
         }
       }
@@ -52,7 +52,7 @@ export function precomputeBlendShapes(
   for (let frameIndex = 0; frameIndex < frameCount; frameIndex++) {
     const weights = weightMat[frameIndex];
     for (let i = 0; i < facsNames.length; i++) {
-      const value = Math.fround(weights[i]); // Use Math.fround for 32-bit float precision
+      const value = Math.fround(weights[i] * 10000); // Convert to fixed-point for 16-bit Uint16Array precision
       if (value !== 0) {
         // Update all targets with matching name
         for (let j = 0; j < targets.length; j++) {
@@ -73,7 +73,7 @@ export function applyPrecomputedBlendShapes(
 ): void {
   for (let i = 0; i < precomputed.length; i++) {
     const targetData = precomputed[i];
-    const newInfluence = targetData.influences[frameIndex];
+    const newInfluence = targetData.influences[frameIndex] / 10000; // Convert back to float from fixed-point Uint16Array
     if (Math.abs(targetData.target.influence - newInfluence) > 0.001) {
       targetData.target.influence = newInfluence;
     }
