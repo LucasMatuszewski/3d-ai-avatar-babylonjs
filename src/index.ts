@@ -132,7 +132,7 @@ const createScene = async (
   // grayMaterial.diffuseColor = Color3.Gray(); // Why Gray is always white? new Color3(0.6, 0.6, 0.6) also doesn't work - why?
   // grayMaterial.roughness = 0;
   // ground.material = grayMaterial;
-  ground.receiveShadows = true; // false by default
+  // ground.receiveShadows = true; // false by default
 
   /**
    * LOAD AVATAR CONTAINER
@@ -157,10 +157,10 @@ const createScene = async (
   avatarRoot.rotation = new Vector3(0, 3.6, 0);
 
   // shadowGenerator.addShadowCaster(scene.meshes[2], true); // mesh 0 = ground, mesh 1 = sphere, mesh 2 = root of Genesis9
-  shadowGenerator.addShadowCaster(avatarRoot, true);
-  for (var index = 0; index < avatarContainer.meshes.length; index++) {
-    avatarContainer.meshes[index].receiveShadows = false;
-  }
+  // shadowGenerator.addShadowCaster(avatarRoot, true);
+  // for (var index = 0; index < avatarContainer.meshes.length; index++) {
+  //   avatarContainer.meshes[index].receiveShadows = false;
+  // }
 
   /**
    *
