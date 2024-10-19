@@ -1,14 +1,10 @@
 import sys
 import os
 
-
-# This script runs in Blender's local Python env, so scripts imported from this folder won't work by default.
-# To make them work, add the directory containing this script to the Python path:
 script_dir = os.path.dirname(os.path.abspath(__file__))
 if script_dir not in sys.path:
     sys.path.append(script_dir)
 
-# Now we can import other local scripts from the same directory
 from count_shapekeys_number import count_shapekeys_number
 
 count_shapekeys_number()
@@ -331,8 +327,8 @@ shape_keys_cleaned_with_expresions_visemes = [
     "Michael9_body_cbs_upperarm_z90p_l",
     "Afraid",
     "Angry",
-    "BareTeeth",  # szczerzyć zęby
-    "Bereft",  # osierocony
+    "BareTeeth",
+    "Bereft",
     "Bored",
     "Brow Down",
     "Brow Up",
@@ -355,7 +351,7 @@ shape_keys_cleaned_with_expresions_visemes = [
     "Concentrate",
     "Confident",
     "Confused",
-    "Contempt",  # pogarda, lekceważenie
+    "Contempt",
     "Desire",
     "Disgust",
     "Drunk",
@@ -365,14 +361,14 @@ shape_keys_cleaned_with_expresions_visemes = [
     "Eye Blink Right",
     "Eye Crossed",
     "Fear",
-    "Fierce",  # zaciekły
+    "Fierce",
     "Flirting",
-    "Frown",  # marszyć brwi
-    "Glare",  # piorunujący?
+    "Frown",
+    "Glare",
     "Happy",
     "Ignore",
     "Ill",
-    "Incredulous",  # nieufny
+    "Incredulous",
     "Irritated",
     "Jaw Forward-Recess",
     "Jaw Left-Right",
@@ -399,8 +395,8 @@ shape_keys_cleaned_with_expresions_visemes = [
     "Nose Sneer",
     "Pain",
     "Pleased",
-    "Pouty",  # nadęty, zarozumiały
-    "Rage",  # wściekły
+    "Pouty",
+    "Rage",
     "Right Hand Fist",
     "Right Hand Grasp",
     "Right Hand Relax",
@@ -414,7 +410,7 @@ shape_keys_cleaned_with_expresions_visemes = [
     "Silly",
     "Smile Full Face",
     "Smile Open Full Face",
-    "Snarl",  # warczy, burczy
+    "Snarl",
     "Surprised",
     "Suspicious",
     "Tired",
@@ -436,11 +432,9 @@ shape_keys_cleaned_with_expresions_visemes = [
     "Vis TH",
     "Vis UW",
     "Vis W",
-    "Wink",  # puścić oczko
+    "Wink",
 ]
 
-
-# A2F emotions mapped to Daz shape keys:
 def editdistance(a, b):
     """A simple implementation of the Levenshtein edit distance."""
     m = len(a) + 1
@@ -456,7 +450,6 @@ def editdistance(a, b):
             dp[i][j] = min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost)
     return dp[m - 1][n - 1]
 
-
 audio2faceEmotionNamesToShapeKeys = {}
 for emotion in audio2faceEmotionNames:
     min_distance = float("inf")
@@ -471,16 +464,15 @@ for emotion in audio2faceEmotionNames:
 print("Audio2Face Emotion Names to Shape Keys:")
 print(audio2faceEmotionNamesToShapeKeys)
 
-# Emotions mapped to Daz shape keys:
 a2fEmotionNamesToShapeKeys = {
     "amazement": "Excitement",
     "anger": "Angry",
-    "cheekiness": "Pouty",  # Confident? Contempt? Fierce? (cheekiness = bezczelny)
+    "cheekiness": "Pouty",
     "disgust": "Disgust",
-    "fear": "Fear",  # Afraid?
-    "grief": "Bereft",  # Ill? (grief = żal, boleść, smutek)
+    "fear": "Fear",
+    "grief": "Bereft",
     "joy": "Happy",
-    "outofbreath": "Shocked",  # Surprised? Shocked? Bereft? Tired?
+    "outofbreath": "Shocked",
     "pain": "Pain",
     "sadness": "Sad",
 }
@@ -492,54 +484,53 @@ a2fBlendshapesToShapeKeys = {
     "eyeLookOutLeft": "facs_bs_EyeLookOutLeft",
     "eyeLookUpLeft": "facs_bs_EyeLookUpLeft",
     "eyeSquintLeft": "facs_bs_EyeSquintLeft",
-    "eyeWideLeft": "eyeWideLeft",  # manually added by me
+    "eyeWideLeft": "eyeWideLeft",
     "eyeBlinkRight": "Eye Blink Right",
     "eyeLookDownRight": "facs_bs_EyeLookDownRight",
     "eyeLookInRight": "facs_bs_EyeLookInRight",
     "eyeLookOutRight": "facs_bs_EyeLookOutRight",
     "eyeLookUpRight": "facs_bs_EyeLookUpRight",
     "eyeSquintRight": "facs_bs_EyeSquintRight",
-    "eyeWideRight": "eyeWideRight",  # manually added by me
-    "jawForward": "",  # facs_bs_JawRecess -1 ???
+    "eyeWideRight": "eyeWideRight",
+    "jawForward": "",
     "jawLeft": "facs_bs_JawLeft",
     "jawRight": "facs_bs_JawRight",
     "jawOpen": "Jaw Open",
     "mouthClose": "Mouth Close",
     "mouthFunnel": "Mouth Funnel",
-    "mouthPucker": "",  # zmarszczone usta
+    "mouthPucker": "",
     "mouthLeft": "facs_bs_MouthLeft",
     "mouthRight": "facs_bs_MouthRight",
     "mouthSmileLeft": "Mouth Smile Left",
     "mouthSmileRight": "Mouth Smile Right",
-    "mouthFrownLeft": "Mouth Frown",  # add Left
-    "mouthFrownRight": "Mouth Frown",  # add Right
-    "mouthDimpleLeft": "",  # dimple = dołek na policzku
+    "mouthFrownLeft": "Mouth Frown",
+    "mouthFrownRight": "Mouth Frown",
+    "mouthDimpleLeft": "",
     "mouthDimpleRight": "",
-    "mouthStretchLeft": "Mouth Stretch",  # add Left
-    "mouthStretchRight": "Mouth Stretch",  # add Right
+    "mouthStretchLeft": "Mouth Stretch",
+    "mouthStretchRight": "Mouth Stretch",
     "mouthRollLower": "",
     "mouthRollUpper": "",
     "mouthShrugLower": "",
     "mouthShrugUpper": "",
-    "mouthPressLeft": "Mouth Press",  # add Left
-    "mouthPressRight": "",  # add Right
+    "mouthPressLeft": "Mouth Press",
+    "mouthPressRight": "",
     "mouthLowerDownLeft": "",
     "mouthLowerDownRight": "",
-    "mouthUpperUpLeft": "Mouth Upper Up",  # add Left
-    "mouthUpperUpRight": "",  # add Right
+    "mouthUpperUpLeft": "Mouth Upper Up",
+    "mouthUpperUpRight": "",
     "browDownLeft": "facs_BrowDownLeft",
     "browDownRight": "facs_BrowDownRight",
-    "browInnerUp": "",  # join facs_bs_BrowInnerUpLeft & facs_bs_BrowInnerUpRight
+    "browInnerUp": "",
     "browOuterUpLeft": "facs_BrowOuterUpLeft",
     "browOuterUpRight": "facs_BrowOuterUpRight",
     "cheekPuff": "Cheek Puff",
     "cheekSquintLeft": "Cheek Squint Left",
     "cheekSquintRight": "Cheek Squint Right",
-    "noseSneerLeft": "Nose Sneer",  # add Left
-    "noseSneerRight": "Nose Sneer",  # add Right
+    "noseSneerLeft": "Nose Sneer",
+    "noseSneerRight": "Nose Sneer",
     "tongueOut": "",
 }
-
 
 shape_keys_with_body_morphs = [
     "Basic",
@@ -942,12 +933,6 @@ shape_keys_with_body_morphs = [
     "Michael9_body_cbs_upperarm_z90n_r",
     "Michael9_body_cbs_upperarm_z90p_l",
 ]
-
-# Merge two lists into one without duplicates
-# merged_list = list(set(shape_keys_cleaned_with_expresions_visemes + shape_keys_with_body_morphs))
-
-# Print the result
-# print(merged_list)
 
 shape_keys_all_merged = [
     "body_cbs_pelvis_x25n",
@@ -1459,7 +1444,3 @@ shape_keys_all_merged = [
     "facs_bs_EyeBlinkLeft",
 ]
 
-
-# TODO:
-# "Mouth Smile Widen" created as a merge of "Mouth Smile Widen Left" and "... Right"
-# (original morph does not modify beard.
