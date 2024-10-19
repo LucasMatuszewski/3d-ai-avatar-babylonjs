@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package audio2face;
+
+// The request message containing the audio file path.
+message AudioRequest {
+  string audio_file_path = 1;
+}
+
+// The response message containing the animation data.
+message AnimationData {
+  repeated float weights = 1;
+  repeated float rotations = 2;
+  repeated float translations = 3;
+}
+
+// The service definition.
+service Audio2Face {
+  // Sends an audio file and receives a stream of animation data.
+  rpc StreamAnimationData (AudioRequest) returns (stream AnimationData);
+}

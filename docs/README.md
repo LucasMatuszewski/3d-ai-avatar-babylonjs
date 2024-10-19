@@ -11,6 +11,7 @@ This SDK provides tools to build and animate 3D avatars using Babylon.js. The SD
   - [Load Assets](#load-assets)
   - [Animations](#animations)
   - [GUI](#gui)
+  - [gRPC Client](#grpc-client)
 - [Tests](#tests)
 
 ## Installation
@@ -114,6 +115,22 @@ The `gui` module sets up the graphical user interface for controlling the avatar
 import { setupGUI } from '3d-ai-avatar-babylonjs/gui';
 
 setupGUI(scene, avatarContainer, a2fData, audioFile);
+```
+
+### gRPC Client
+
+The `grpcClient` module sets up the gRPC client to fetch animation data as a stream from the Audio2Face endpoint.
+
+```typescript
+import { streamAnimationData } from '3d-ai-avatar-babylonjs/grpcClient';
+
+const audioFilePath = 'path/to/audio.wav';
+
+streamAnimationData(audioFilePath, (data) => {
+  console.log('Received animation data:', data);
+}, (error) => {
+  console.error('Error streaming animation data:', error);
+});
 ```
 
 ## Tests

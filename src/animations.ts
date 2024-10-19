@@ -2,6 +2,7 @@ import { applyJointTransforms, applyPrecomputedBlendShapes, precomputeBlendShape
 import type { Audio2FaceExportData } from './audio2face';
 import { Sound } from '@babylonjs/core/Audio/sound';
 import { Engine } from '@babylonjs/core';
+import { streamAnimationData } from './grpcClient';
 
 export function setupAnimations(scene, avatarContainer, a2fData, audioFile) {
   // TODO: Parcel fetch and parse json file automatically, but with Webpack we need to do it manually
