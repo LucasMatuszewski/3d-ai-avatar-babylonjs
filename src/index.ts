@@ -12,6 +12,7 @@ import {
   ShadowGenerator,
   AnimationPropertiesOverride,
   Engine,
+  Color4,
 } from '@babylonjs/core';
 import { Sound } from '@babylonjs/core/Audio/sound';
 
@@ -75,6 +76,9 @@ const createScene = async (
   const scene = new Scene(engine);
   // scene.shadowsEnabled = true; // true by default
 
+  // To set the background to transparent use alpha = 0
+  scene.clearColor = new Color4(0, 0, 0, 0);
+
   /**
    * LIGHTS
    */
@@ -85,7 +89,7 @@ const createScene = async (
     new Vector3(0, 1, 0),
     scene
   );
-  ambientLight.intensity = 0.1;
+  ambientLight.intensity = 0.6;
   ambientLight.specular = Color3.Black();
 
   // light going only in one direction in a cone defined by angle
